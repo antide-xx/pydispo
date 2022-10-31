@@ -47,10 +47,17 @@ if not pydispo_workdir == os.getcwd():
         os.mkdir(pydispo_workdir)
  
 def generate_email_address(size=10,storeInFile='email_address',mode='w'):
+    ## get all active domains
+    domain_list = requests.get('https://www.1secmail.com/api/v1/?action=getDomainList').text
+    domain_list = domain_list.replace('"','').replace('[','').replace(']','').split(',').remove() 
+    # domain_list = ["bheps.com","dcctb.com","kzccv.com","qiott.com","wuuvo.com"]
     tld_list=['com', 'net', 'org']
     chars=string.ascii_lowercase + string.digits
     user = ''.join(random.SystemRandom().choice(chars) for _ in range(size))
-    email_addr = user+'@1secmail.'+ random.choice(tld_list)
+    domain = random.choice(domain_list)
+    print(domain)
+    # email_addr = user+'@1secmail.'+ random.choice(tld_list)
+    email_addr = user + '@' + domain
     fop = open(storeInFile,mode)
     if mode == 'a':
       fop.write(email_addr+'\n')
@@ -88,25 +95,27 @@ def check_mailbox(email_addr,showInbox=True,showRecent=True):
     response = response.json()
     num_mails = len(response)
     if num_mails == 0:
-        print("Mailbox: ", email_addr, " Mails in Inbox:",num_mails )
-        print("Empty Inbox")
+        # print("Mailbox: ", email_addr, " Mails in Inbox:",num_mails )
+        # print("Empty Inbox")
         return ;
 
     inboxmail_id_list = []
-    print("#"*25)
-    print("Mailbox: ", email_addr, " Mails in Inbox:",num_mails )
+    # print("#"*25)
+    # print("Mailbox: ", email_addr, " Mails in Inbox:",num_mails )
     for nm in range(num_mails):
         if showInbox:
             if nm == 0:
-                print('Message ID' ,'\t', 'Sender' ,'\t \t', 'Subject', '\t' , 'Date')
-            print(response[nm]['id'] ,'\t', response[nm]['from'] ,'\t', response[nm]['subject'].encode("utf-8"), '\t' , response[nm]['date'] )
+                pass
+            #     print('Message ID' ,'\t', 'Sender' ,'\t \t', 'Subject', '\t' , 'Date')
+            # print(response[nm]['id'] ,'\t', response[nm]['from'] ,'\t', response[nm]['subject'].encode("utf-8"), '\t' , response[nm]['date'] )
         inboxmail_id_list.append(response[nm]['id'])
     
     if showRecent:
-        print("Showing the recent email received on: "+response[0]['date'])
-        check_single_email(email_addr,inboxmail_id = inboxmail_id_list[0])
-    print("#"*25)
-    return;     
+        # print("Showing the recent email received on: "+response[0]['date'])
+        check_single_email(email_addr,inboxmail_id = inboxmail_id_list[0], printInTerminal=False)
+        inboxmail_id = inboxmail_id_list[0]
+    # print("#"*25)
+    return inboxmail_id     
     #FUTURE: A proper protonmail-style layout
 
 def check_single_email(email_addr,inboxmail_id = 0, bodyasHTML = False, getAttached=False, saveHTMLFile="tmpmail.html",printInTerminal=True):
@@ -124,6 +133,8 @@ def check_single_email(email_addr,inboxmail_id = 0, bodyasHTML = False, getAttac
         return ;
     
     response = response.json()
+
+    # print(response)
     if len(response['attachments']) == 0: 
         str_attached = 'Not Found'
         getAttached = False
@@ -163,7 +174,7 @@ def check_single_email(email_addr,inboxmail_id = 0, bodyasHTML = False, getAttac
         print("Getting all attached files . . ")
         for filename in attached_files:
             getAttachedFile(http_get_url_single, filename,savedir='./')
-    return ;
+    return response;
     #FUTURE: All to HTML, not just body. Link Attachments to HTML. Store attachments in workdir
     
 def getAttachedFile(http_get_url_single, filename,savedir='./'):
